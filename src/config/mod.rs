@@ -37,7 +37,7 @@ impl Config {
         let file_name = format!("{}.yaml", env);
 
         let settings = config::Config::builder()
-            .add_source(config::File::from(config_dir,join(file_name)))
+            .add_source(config::File::from(config_dir.join(file_name)))
             .add_source(
                 config::Environment::with_prefix("APP")
                     .separator("__")
@@ -68,7 +68,7 @@ impl Environment {
         std::env::var("APP_ENVIRONMENT")
             .or_else(|_| std::env::var("APP_ENV"))
             .map(|s| Self::from(s.as_str()))
-            .unwrap_or_defaulr()
+            .unwrap_or_default()
     }
 }
 

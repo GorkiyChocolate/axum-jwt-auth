@@ -1,7 +1,15 @@
 [package]
-name = "axum-jwt-auth"
+name = "auth"
 version = "0.1.0"
 edition = "2024"
+
+[[bin]]
+name = "auth"
+path = "src/bin/main.rs"
+
+[lib]
+name = "auth"
+path = "src/lib.rs"
 
 [dependencies]
 axum = { version = "0.8.9", features = ["macros"] }

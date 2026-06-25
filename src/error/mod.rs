@@ -1,9 +1,9 @@
 use std::fmt::{self, Display};
 
 #[derive(Debug)]
-pub struct Report(pub color_eyre::Report)
+pub struct Report(pub color_eyre::Report);
 
-impl<E> From<E> for report Report
+impl<E> From<E> for Report
 where
     E: Into<color_eyre::Report>,
 {
@@ -23,7 +23,7 @@ pub type Result<T, E = Report> = std::result::Result<T, E>;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
-    Axum(#[from] axum:;Error),
+    Axum(#[from] axum::Error),
     #[error(transparent)]
     Config(#[from] config::ConfigError),
     #[error(transparent)]
