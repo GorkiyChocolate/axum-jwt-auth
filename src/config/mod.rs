@@ -22,6 +22,7 @@ impl ServerConfig {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     server: ServerConfig,
+    log: Logger,
 }
 
 impl Config {
@@ -51,6 +52,10 @@ impl Config {
 
     pub fn server(&self) -> &ServerConfig {
         &self.server
+    }
+
+    pub fn log(&self) -> &Logger {
+        self.log
     }
 }
 
