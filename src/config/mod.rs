@@ -1,5 +1,7 @@
 use serde::Deserialize;
+pub mod log;
 
+use self::log::Logger;
 use crate::Result;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -55,7 +57,7 @@ impl Config {
     }
 
     pub fn log(&self) -> &Logger {
-        self.log
+        &self.log
     }
 }
 

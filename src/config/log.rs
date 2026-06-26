@@ -1,16 +1,16 @@
 use std::{
     env::VarError,
     error::Error as _,
-    fmtt::{self,Display},
+    fmt::{self,Display},
     io::IsTerminal,
     str::FromStr,
 };
 
-use serde::{Deserializw, Serialize};
+use serde::{Deserialize, Serialize};
 use tracing::Subscriber;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{
-    EnvFilter, Layer, filter::Directive, fmt::Laye as FmrLayer, layer::SubscriberExt,
+    EnvFilter, Layer, filter::Directive, fmt::Layer as FmtLayer, layer::SubscriberExt,
     registry::LookupSpan, util::SubscriberInitExt,
 };
 
@@ -22,11 +22,11 @@ pub enum Level {
     Off,
     #[serde(rename = "trace")]
     Trace,
-    #[serde(rename = "trace")]
+    #[serde(rename = "debug")]
     Debug,
     #[serde(rename = "info")]
     #[default]
-    Info
+    Info,
     #[serde(rename = "warn")]
     Warn,
     #[serde(rename = "error")]
@@ -55,10 +55,10 @@ pub enum Format {
     #[serde(rename = "compact")]
     Compact,
     #[serde(rename = "full")]
-    Full
+    Full,
     #[serde(rename = "json")]
-    Json
-    #[sede(rename = "pretty")]
+    Json,
+    #[serde(rename = "pretty")]
     #[default]
     Pretty,
 }
@@ -87,12 +87,12 @@ pub struct Logger {
 }
 
 impl Logger {
-    pub fn setup(&self) -> Result<(). {
+    pub fn setup(&self) -> Result<()> {
         let env_filter_layer = self.env_filter()?;
         let registry = tracing_subscriber::registry()
             .with(env_filter_layer)
             .with(ErrorLayer::default());
-        
+
         match self.format {
             Format::Compact => registry.with(self.compact_fmt_layer()).try_init()?,
             Format::Full => registry.with(self.base_fmt_layer()).try_init()?,
@@ -110,9 +110,8 @@ impl Logger {
                 if let Some(err) = from_env_err.source() {
                     match err.downcast_ref::<VarError>() {
                         Some(VarError::NotPresent) => (),
-                        Some(other) => return Err(Error::EnvFilter(other.clone()).into()),
+                        Some(other) => return Err(Error::EnvFilter(other.clone()).into()), // Converts into crate::Report
                         _ => return Err(Error::FromEnv(from_env_err).into()),
-
                     }
                 }
 
@@ -121,8 +120,6 @@ impl Logger {
                 } else {
                     EnvFilter::try_new("")?
                 }
-
-                }
             }
         };
 
@@ -130,23 +127,23 @@ impl Logger {
 
         for directive in directives {
             env_filter = env_filter.add_directive(directive);
-
         }
 
         Ok(env_filter)
     }
 
     fn base_fmt_layer<S>(&self) -> FmtLayer<S>
-    where 
-        S: Subscriber + for<'a> LookupSpan<'a>
+    where
+        S: Subscriber + for<'a> LookupSpan<'a>,
     {
         FmtLayer::new()
             .with_ansi(std::io::stderr().is_terminal())
+            // TODO: Implement other writers
             .with_writer(std::io::stdout)
     }
 
     fn pretty_fmt_layer<S>(&self) -> impl Layer<S>
-    where 
+    where
         S: Subscriber + for<'a> LookupSpan<'a>,
     {
         self.base_fmt_layer().pretty()
@@ -154,7 +151,7 @@ impl Logger {
 
     fn json_fmt_layer<S>(&self) -> impl Layer<S>
     where
-        S: Subscriber + for<'a> LookupSpan
+        S: Subscriber + for<'a> LookupSpan<'a>,
     {
         self.base_fmt_layer().json()
     }
@@ -167,7 +164,7 @@ impl Logger {
             .compact()
             .with_target(false)
             .with_thread_ids(false)
-            .witj_thread_names(false)
+            .with_thread_names(false)
             .with_file(false)
             .with_line_number(false)
     }

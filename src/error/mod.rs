@@ -29,7 +29,7 @@ pub enum Error {
     #[error(transparent)]
     IOError(#[from] std::io::Error),
     #[error(transparent)]
-    DirectiveParseError(#[form] tracing_subscriber::filter::ParseError),
+    DirectiveParseError(#[from] tracing_subscriber::filter::ParseError),
     #[error(transparent)]
     EnvFilter(#[from] std::env::VarError),
     #[error(transparent)]
