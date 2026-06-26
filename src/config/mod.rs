@@ -25,6 +25,8 @@ impl ServerConfig {
 pub struct Config {
     server: ServerConfig,
     log: Logger,
+    database: DatabaseConfig,
+    redis: RedisConfig,
 }
 
 impl Config {
@@ -58,6 +60,14 @@ impl Config {
 
     pub fn log(&self) -> &Logger {
         &self.log
+    }
+
+    pub fn redis(&self) -> &RedisConfig {
+        &self.redis
+    }
+
+    pub fn database(&self) -> &DatabaseConfig {
+        &self.database
     }
 }
 

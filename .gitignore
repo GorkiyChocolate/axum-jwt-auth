@@ -1,2 +1,4 @@
 /target
 development.yaml
+.env
+/config/security/keys
