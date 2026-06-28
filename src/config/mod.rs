@@ -39,15 +39,21 @@ pub struct Config {
 
 impl Config {
     pub fn load() -> Result<Self> {
-        let env = Environment::current();
-        Self::from_env(&env)
+    println!("Loading config...");
+    let env = Environment::current();
+    println!("Environment: {}", env);
+    Self::from_env(&env)
     }
 
     pub fn from_env(env: &Environment) -> Result<Self> {
-        let base_dir = std::env::current_dir()?;
-        let config_dir = base_dir.join("config");
-
         let file_name = format!("{}.yaml", env);
+        let base_dir = std::env::current_dir()?;
+        println!("Current dir: {:?}", base_dir);
+
+        let config_dir = base_dir.join("config");
+        println!("Config path: {:?}", config_dir.join(&file_name));
+
+        
 
         let settings = config::Config::builder()
             .add_source(config::File::from(config_dir.join(file_name)))

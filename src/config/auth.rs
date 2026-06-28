@@ -13,17 +13,25 @@ pub struct RsaJwtConfig {
 }
 
 impl RsaJwtConfig {
-    pub fn encoding_key(&self) -> Result<EncodingKey> {
-        let contents = std::fs::read_to_string(&self.private_key)?;
 
-        EncodingKey::from_rsa_pem(contents.as_bytes()).map_err(Into::into)
+   pub fn encoding_key(&self) -> Result<EncodingKey> {
+    println!("Opening private key: {:?}", self.private_key);
 
+    let contents = std::fs::read_to_string(&self.private_key)?;
+
+    println!("Private key loaded");
+
+    EncodingKey::from_rsa_pem(contents.as_bytes()).map_err(Into::into)
     }
 
     pub fn decoding_key(&self) -> Result<DecodingKey> {
-        let contents = std::fs::read_to_string(&self.public_key)?;
+    println!("Opening public key: {:?}", self.public_key);
 
-        DecodingKey::from_rsa_pem(contents.as_bytes()).map_err(Into::into)
+    let contents = std::fs::read_to_string(&self.public_key)?;
+
+    println!("Public key loaded");
+
+    DecodingKey::from_rsa_pem(contents.as_bytes()).map_err(Into::into)
     }
 
     pub fn exp(&self) -> i64 {
