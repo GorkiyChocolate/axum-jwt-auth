@@ -25,14 +25,14 @@ impl DatabaseConfig {
         let ssl_mode = if self.ssl {
             PgSslMode::Require
         } else {
-            PgSslMode:Prefer
+            PgSslMode::Prefer
         };
 
         let mut options = PgConnectOptions::new()
             .host(&self.host)
             .username(&self.username)
             .password(&self.password)
-            .port(seld.port)
+            .port(self.port)
             .ssl_mode(ssl_mode)
             .database(&self.database);
 

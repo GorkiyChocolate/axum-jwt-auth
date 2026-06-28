@@ -5,7 +5,7 @@ use color_eyre::config::{HookBuilder, Theme};
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
 
-use crate::{Result, config::Config, middleware::trace};
+use crate::{Result, config::Config, middlewares::trace};
 
 pub struct App;
 
@@ -20,6 +20,8 @@ impl App {
         let config = Config::load()?;
 
         config.log().setup()?;
+
+        let ctx = Arc::new(AppContext::try_form(&config)?);
 
         let router = Router::new()
             .route("/hello", get(|| async { "123+5 = 128"}))

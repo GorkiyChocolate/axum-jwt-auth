@@ -33,7 +33,7 @@ impl RsaJwtConfig {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct AuthConfig {
-    acces: RsaJwtConfig,
+    access: RsaJwtConfig,
     refresh: RsaJwtConfig,
 }
 

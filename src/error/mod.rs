@@ -1,7 +1,37 @@
-use std::fmt::{self, Display};
+use std::{
+    env::VarError,
+    fmt::{self, Display},
+};
+use argon2::password_hash::Error as PassWordHashError;
+use axum::{
+    Json,
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
+use serde_json::json;
+use tracing_subscriber::filter::FromEnvError;
 
+use crate::{middlewares::AuthError, models::ModelError};
 #[derive(Debug)]
 pub struct Report(pub color_eyre::Report);
+
+impl IntoResponse for Report {
+    fn into_response(self) -> Response {
+        let err = self.0;
+        let err_string = format!("{:?}", &err);
+
+        tracing::error!("An error ocured {}", err_string);
+
+        if let Some(error) = err.downcast_ref::<Error>() {
+            return error.response();
+        }
+
+        (
+            StatusCode:INTERNAL_SERVER_ERROR,
+            Json(json!({"error": "Something went wrong on our end."})),
+        ).into_response()
+    }
+}
 
 impl<E> From<E> for Report
 where
@@ -42,4 +72,43 @@ pub enum Error {
     Migrate(#[from] sqlx::migrate::MigrateError),
     #[error(transparent)]
     Redis(#[from] redis::RedisError),
+    #[error(transparent)]
+    JsonWebToken(#[from] jsonwebtoken::errors::Error),
+    #[error("{0}")]
+    Argon2(argon2::Error),
+    #[error("{0}")]
+    PasswordHash(argon2::password_hash::Error),
+    #[error("Invalid email or password")]
+    InvalidCredentials,
+    #[error("Error occured when signing or verifying token")]
+    TokenError,
+    #[error(transparent)]
+    SerdeJson(#[from] serde_json::error::Error),
+    #[error(transparent)]
+    Auth(#[from] AuthError),
+    #[error(transparent)]
+    Model(#[from] ModelError),
+}
+
+impl From<argon2::Error> for Error {
+    fn from(err: argon2::Error) -> Self {
+        Self::Argon2(err)
+    }
+}
+
+impl Error {
+    pub fn response(&self) -> Response {
+        let (status, message) = match self {
+            Self::InvalidCredentials => (StatusCode::UNAUTHORIZED, "Invalid email or password"),
+            Self::Auth(err) => return err.response(),
+            Self::Model(err) => return err.response(),
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal Server Error"),
+        };
+
+        let body = Json(json!({
+            "error":message
+        }));
+
+        (status, body).into_response()
+    }
 }

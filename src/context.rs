@@ -1,9 +1,10 @@
-use jsonwebtoken::{DecodingKey, EncodindKey};
+use jsonwebtoken::{DecodingKey, EncodingKey, Header};
 use redis::aio::MultiplexedConnection;
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::{
-    config::{Config,RsaJwtConfig},
+    config::{Config, RsaJwtConfig},
     error::Report,
 };
 
@@ -52,7 +53,7 @@ pub struct JwtContext {
     pub exp: u64,
 }
 
-impl TryFrom<&RsaJwtConfig for JwtContext {
+impl TryFrom<&RsaJwtConfig> for JwtContext {
     type Error = Report;
     
     fn try_from(config: &RsaJwtConfig) -> Result<Self, Self::Error> {
@@ -65,6 +66,52 @@ impl TryFrom<&RsaJwtConfig for JwtContext {
             encoding_key,
             decoding_key,
             exp,
+        })
+    }
+}
+
+
+impl JwtContext {
+    pub fn generate_token(&self, sub: Uuid) -> Result<TokenDetails, Report> {
+        let now = chrono::Utc::now();
+        let mut token_details = TokenDetails {
+            user_pid: sub,
+            token_id: Uuid::new_v4(),
+            expires_in: Some((now + chrono::Duration::seconds(self.exp)).timestamp()),
+            token:None,
+        };
+
+        let claims = TokenClaims {
+            sub: token_details.user_pid.to_string(),
+            id: token_details.token_id.to_string(),
+            exp: token_details.expires_in.ok_or(crate::Error::TokenError)?,
+            iat: now.timestamp(),
+            nbf: now.timestamp(),
+        };
+
+        let header = Header::new(Algorithm::RS256);
+
+        let token = jsonwebtoken::encode(&header, &claims, &self.encoding_key)?;
+
+        token_details.token = Some(token);
+
+        Ok(token_details)
+
+    }
+
+    pub fn verify_token(&self,token:&str) -> Result<TokenDetails, Report> {
+        let validation = Validation::new(Algorithm::RS256);
+
+        let token_data = jsonwebtoken::decode::<TokenClaims>(token, &self.decoding_key, &validation)?;
+
+        let user_pid = Uuid::parse_str(&token_data.claims.sub)?;
+        let token_id = Uuid::parse_str(&token_data.claims.id)?;
+
+        Ok(TokenDetails {
+            token: None,
+            token_id,
+            user_pid,
+            expires_in: None,
         })
     }
 }
