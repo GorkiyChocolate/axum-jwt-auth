@@ -15,7 +15,7 @@ use axum::{
 };
 
 use axum_extra::{
-    TypeHeader,
+    TypedHeader,
     extract::cookie,
     headers::{Authorization, Cookie, authorization::Bearer},
     typed_header::TypedHeaderRejectionReason,
@@ -25,7 +25,7 @@ use futures_util::future::BoxFuture;
 use redis::AsyncCommands as _;
 use tower::{Layer, Service};
 
-use crate::{context::AppContext, middlewares::AuthError, models::token::TokenDetails};
+use crate::{context::AppContext, middlewares::error::AuthError, models::token::TokenDetails};
 
 #[derive(Clone)]
 pub struct RefreshLayer {
@@ -90,12 +90,12 @@ where
 
             };
 
-            let access_token = match parts.extract::<TypeHeader<Authorization<Bearer>>>().await {
+            let access_token = match parts.extract::<TypedHeader<Authorization<Bearer>>>().await {
                 Ok(header) => Some(header.token().to_string()),
                 Err(err) => {
-                    if matches!(err.reason(), TypeHeaderRejectionReason::Missing) {
-                        parts.extract::<TypeHeader<Cookie>>().await.ok().and_then(
-                            |TypeHeader(cookies)|{
+                    if matches!(err.reason(), TypedHeaderRejectionReason::Missing) {
+                        parts.extract::<TypedHeader<Cookie>>().await.ok().and_then(
+                            |TypedHeader(cookies)| {
                                 cookies.get("access_token").map(ToString::to_string)
                             },
                         )
@@ -146,17 +146,17 @@ where
                     Ok(details) => {
                         new_access_token = details.token.unwrap();
                     }
-                    Err(e) => return Ok(e.into_respons()),
+                    Err(e) => return Ok(e.into_response()),
                 }
             }
             let access_cookie = cookie::Cookie::build(("access_token", &new_access_token))
                 .path("/")
-                .max_age(time::Duration::seconds(ctx.auth.access.exp))
+                .max_age(time::Duration::seconds(ctx.auth.access.exp as i64))
                 .same_site(cookie::SameSite::Lax)
                 .http_only(true)
                 .to_string();
 
-            let mut req = Request::from_parts(parts,body);
+            let mut req = Request::from_parts(parts, body);
             req.headers_mut().append(
                 AUTHORIZATION,
                 HeaderValue::from_str(format!("Bearer {}", &new_access_token).as_str()).unwrap(),

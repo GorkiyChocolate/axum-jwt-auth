@@ -23,7 +23,7 @@ jsonwebtoken = { version = "10.4.0", features = ["rust_crypto"] }
 redis = { version = "1.2.4", features = ["tokio-comp"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
-sqlx = { version = "0.8.3", features = ["runtime-tokio-rustls", "postgres", "migrate"] }
+sqlx = { version = "0.8.3", features = ["runtime-tokio-rustls", "postgres", "migrate", "macros", "uuid", "chrono"] }
 thiserror = "2.0.18"
 time = { version = "0.3.51", features = ["serde"] }
 tokio = { version = "1.52.3", features = ["full"] }

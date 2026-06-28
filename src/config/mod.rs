@@ -66,7 +66,7 @@ impl Config {
         &self.server
     }
 
-    pub fn log(&self) -> &Logger {
+    pub fn logger(&self) -> &Logger {
         &self.log
     }
 

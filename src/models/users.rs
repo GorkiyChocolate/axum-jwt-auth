@@ -12,7 +12,8 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Encode, Executor, Postgres, prelude::FromRow};
 use uuid::Uuid;
 
-use crate::Result;
+use crate::{Result, models::ModelError};
+
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct RegisterUser<'a> {
@@ -54,7 +55,7 @@ impl User {
         for<'a> &'a C: Executor<'e, Database = Postgres>,
     {
         let user = sqlx::query_as::<_, Self> (
-            r"
+        r"
             INSERT INTO users (email, name, password)
             VALUES ($1, $2, $3)
             RETURNING *
@@ -70,7 +71,7 @@ impl User {
 
     pub async fn find_by_email<'e, C>(db: &C, email: &str) -> Result<Option<Self>>
     where
-        for<'a> &'a C: Executor<'e, Databse = Postgres>,
+        for<'a> &'a C: Executor<'e, Database = Postgres>,
     {
         sqlx::query_as(
             r"
@@ -81,6 +82,22 @@ impl User {
         .fetch_optional(db)
         .await
         .map_err(Into::into)
+    }
+
+    pub async fn find_by_pid<'e, C>(db: &C, pid: Uuid) -> Result<Self>
+    where
+        for<'a> &'a C: Executor<'e, Database = Postgres>,
+
+    {
+        sqlx::query_as(
+            r"
+                SELECT * FROM users WHERE pid = $1
+            ",
+        )
+        .bind(pid)
+        .fetch_optional(db)
+        .await?
+        .ok_or(crate::Error::Model(ModelError::EntityNotFound).into())
     }
 
     pub fn verify_password(&self, password: &str) -> Result<()> {
@@ -127,5 +144,5 @@ fn password_hash(plain_password: &str) -> Result<String> {
         .hash_password(plain_password.as_bytes(), &salt)
         .map_err(crate::Error::PasswordHash)?;
 
-    Ok(hahs.to_string())
+    Ok(hash.to_string())
 }

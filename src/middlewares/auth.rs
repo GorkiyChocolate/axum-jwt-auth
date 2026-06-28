@@ -20,7 +20,7 @@ use axum_extra::{
 use futures_util::future::BoxFuture;
 use tower::{Layer, Service};
 
-use crate::{context::AppContext, middlewares::AuthError};
+use crate::{context::AppContext, middlewares::error::AuthError};
 
 #[derive(Clone)]
 pub struct AuthLayer {
@@ -69,17 +69,17 @@ where
         let ctx = self.ctx.clone();
         let clone = self.inner.clone();
 
-        let mut inner = std::mem::replace(&mut self.inner.clone);
+        let mut inner = std::mem::replace(&mut self.inner, clone);
 
         Box::pin(async move {
             let (mut parts, body) = req.into_parts();
 
-            let access_token = match parts.extract::<TypeHeader<Authorization<Berear>>>().await {
+            let access_token = match parts.extract::<TypedHeader<Authorization<Bearer>>>().await {
                 Ok(header) => Some(header.token().to_string()),
                 Err(err) => {
-                    if matches!(err.reason(), TypeHeaderRejectionReason::Missing) {
-                        part.extract::<TypeHeader<Cookie>>().await.ok().and_then(
-                            |TypeHeader(cookies)| {
+                    if matches!(err.reason(), TypedHeaderRejectionReason::Missing) {
+                        parts.extract::<TypedHeader<Cookie>>().await.ok().and_then(
+                            |TypedHeader(cookies)| {
                                 cookies.get("access_token").map(ToString::to_string)
                             },
                         )
@@ -100,7 +100,7 @@ where
                 Err(err) => return Ok(err.into_response()),
             };
 
-            let req = Request::from_parts(parts,body);
+            let req = Request::from_parts(parts, body);
 
             inner.call(req).await
         })

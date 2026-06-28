@@ -2,7 +2,8 @@ use std::{
     env::VarError,
     fmt::{self, Display},
 };
-use argon2::password_hash::Error as PassWordHashError;
+
+use argon2::password_hash::Error as PasswordHashError;
 use axum::{
     Json,
     http::StatusCode,
@@ -12,6 +13,7 @@ use serde_json::json;
 use tracing_subscriber::filter::FromEnvError;
 
 use crate::{middlewares::AuthError, models::ModelError};
+
 #[derive(Debug)]
 pub struct Report(pub color_eyre::Report);
 
@@ -20,16 +22,17 @@ impl IntoResponse for Report {
         let err = self.0;
         let err_string = format!("{:?}", &err);
 
-        tracing::error!("An error ocured {}", err_string);
+        tracing::error!("An error occured {}", err_string);
 
         if let Some(error) = err.downcast_ref::<Error>() {
             return error.response();
         }
-
+        
         (
-            StatusCode:INTERNAL_SERVER_ERROR,
+            StatusCode::INTERNAL_SERVER_ERROR,
             Json(json!({"error": "Something went wrong on our end."})),
-        ).into_response()
+        )
+            .into_response()
     }
 }
 
@@ -42,7 +45,7 @@ where
     }
 }
 
-impl Display for Report{
+impl Display for Report {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
     }
@@ -57,17 +60,15 @@ pub enum Error {
     #[error(transparent)]
     Config(#[from] config::ConfigError),
     #[error(transparent)]
-    IOError(#[from] std::io::Error),
-    #[error(transparent)]
     DirectiveParseError(#[from] tracing_subscriber::filter::ParseError),
     #[error(transparent)]
-    EnvFilter(#[from] std::env::VarError),
+    EnvFilter(#[from] VarError),
     #[error(transparent)]
-    FromEnv(#[from] tracing_subscriber::filter::FromEnvError),
+    FromEnv(#[from] FromEnvError),
+    #[error(transparent)]
+    IOError(#[from] std::io::Error),
     #[error(transparent)]
     TryInit(#[from] tracing_subscriber::util::TryInitError),
-    #[error(transparent)]
-    Sqlx(#[from] sqlx::Error),
     #[error(transparent)]
     Migrate(#[from] sqlx::migrate::MigrateError),
     #[error(transparent)]
@@ -96,6 +97,15 @@ impl From<argon2::Error> for Error {
     }
 }
 
+impl From<PasswordHashError> for Error {
+    fn from(err: PasswordHashError) -> Self {
+        match err {
+            PasswordHashError::Password => Self::InvalidCredentials,
+            _ => Self::PasswordHash(err),
+        }
+    }
+}
+
 impl Error {
     pub fn response(&self) -> Response {
         let (status, message) = match self {
@@ -106,7 +116,7 @@ impl Error {
         };
 
         let body = Json(json!({
-            "error":message
+            "error": message
         }));
 
         (status, body).into_response()

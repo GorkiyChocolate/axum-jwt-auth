@@ -4,13 +4,13 @@ use axum::{
     Json, Router,
     body::Body,
     debug_handler,
-    extract::State,
+    extract::{Extension, State},
     http::{
         HeaderValue, StatusCode,
         header::{AUTHORIZATION, SET_COOKIE},
     },
     response::{IntoResponse, Response},
-    routing::post,
+    routing::{get, post},
 };
 use axum_extra::extract::cookie;
 use serde_json::json;
@@ -18,7 +18,7 @@ use serde_json::json;
 use crate::{
     Result,
     context::AppContext,
-    middlewares::AuthError,
+    middlewares::{AuthError, AuthLayer, RefreshLayer},
     models::{LoginUser, RegisterUser, User},
 };
 
@@ -60,13 +60,13 @@ async fn login(
     let access_cookie = cookie::Cookie::build(("access_token", &access_token))
         .path("/")
         .http_only(false)
-        .max_age(time::Duration::seconds(ctx.auth.access.exp))
+        .max_age(time::Duration::seconds(ctx.auth.access.exp as i64))
         .same_site(cookie::SameSite::Lax);
 
     let refresh_cookie = cookie::Cookie::build(("refresh_token", &refresh_token))
         .path("/")
         .http_only(true)
-        .max_age(time::Duration::seconds(ctx.auth.refresh.exp))
+        .max_age(time::Duration::seconds(ctx.auth.refresh.exp as i64))
         .same_site(cookie::SameSite::Lax);
 
     let mut res = Response::builder().status(StatusCode::OK).body(Body::from(
@@ -80,7 +80,7 @@ async fn login(
 
     res.headers_mut().append(
         AUTHORIZATION,
-        HeaderValue::from-str(access_token.as_str()).unwrap(),
+        HeaderValue::from_str(access_token.as_str()).unwrap(),
     );
     res.headers_mut().append(
         SET_COOKIE,
@@ -96,7 +96,7 @@ async fn login(
 
 #[debug_handler]
 async fn current(
-    Extension(auth): Extensiom<TokenDetails>,
+    Extension(auth): Extension<crate::models::token::TokenDetails>,
     State(ctx): State<Arc<AppContext>>,
 ) -> Result<Response> {
     let user = User::find_by_pid(&ctx.db, auth.user_pid).await?;
@@ -107,8 +107,14 @@ async fn current(
             "pid": user.pid(),
             "email": user.email()
         })),
-    ),
-        into_response())
+    )
+        .into_response())
+}
+
+async fn logout(
+    State(_ctx): State<Arc<AppContext>>,
+) -> Result<Response> {
+    Ok((StatusCode::OK, Json(json!({"message": "Logged out"}))).into_response())
 }
 
 pub fn router(ctx: &Arc<AppContext>) -> Router {
