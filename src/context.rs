@@ -1,4 +1,4 @@
-use jsonwebtoken::{DecodingKey, EncodingKey, Header};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use redis::aio::MultiplexedConnection;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::{
     config::{Config, RsaJwtConfig},
     error::Report,
+    models::token::{TokenClaims, TokenDetails},
 };
 
 #[derive(Clone)]
@@ -15,6 +16,7 @@ pub struct AppContext {
     pub db: PgPool,
     pub redis: MultiplexedConnection,
 }
+
 
 impl TryFrom<&Config> for AppContext {
     type Error = Report;
@@ -53,6 +55,48 @@ pub struct JwtContext {
     pub exp: u64,
 }
 
+impl AppContext{
+    pub async fn store_refresh_token(&self, token_details: &TokenDetails) -> Result<(), Report> {
+        let mut conn = self.redis.clone();
+        let key = format!("refresh_token:{}", token_details.token_id);
+        let value = serde_json::to_string(token_details)?;
+
+        if let Some(expires_in) = token_details.expires_in {
+            let ttl = (expires_in - chrono::Utc::now().timestamp()) as i64;
+            conn.set_ex(&key, &value, ttl).await?;
+        } else {
+            conn.set(&key, &value).await?;
+        }
+
+        Ok(())
+    }
+
+    pub async fn revoke_refresh_token(&self,token_id: Uuid) -> Result<(), Report> {
+        let mut conn = self.redis.clone();
+        let key = format!("refresh_token:{}", token_id);
+        conn.del(&key).await?;
+
+        Ok(())
+    }
+
+    pub async fn try_from(config: &Config) -> Result<Self, Report> {
+        let db = config.database().pool().await;
+        let redis = config.redis().multiplexed_connection().await?;
+        
+        let auth = AuthContext {
+            access: config.auth().access().try_into()?,
+            refresh: config.auth().refresh().try_into()?,
+        };
+
+        Ok(Self {
+            redis,
+            db,
+            auth,
+            config: config.clone(),
+        })
+    }
+}
+
 impl TryFrom<&RsaJwtConfig> for JwtContext {
     type Error = Report;
     
@@ -71,14 +115,15 @@ impl TryFrom<&RsaJwtConfig> for JwtContext {
 }
 
 
+
 impl JwtContext {
     pub fn generate_token(&self, sub: Uuid) -> Result<TokenDetails, Report> {
         let now = chrono::Utc::now();
         let mut token_details = TokenDetails {
             user_pid: sub,
             token_id: Uuid::new_v4(),
-            expires_in: Some((now + chrono::Duration::seconds(self.exp)).timestamp()),
-            token:None,
+            expires_in: Some((now + chrono::Duration::seconds(self.exp as i64)).timestamp()),
+            token: None,
         };
 
         let claims = TokenClaims {

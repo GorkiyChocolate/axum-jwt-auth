@@ -19,18 +19,19 @@ impl App {
 
         let config = Config::load()?;
 
-        config.log().setup()?;
+        config.logger().setup()?;
 
-        let ctx = Arc::new(AppContext::try_form(&config)?);
+        let ctx = Arc::new(AppContext::try_form(&config).await?);
 
         let router = Router::new()
-            .route("/hello", get(|| async { "123+5 = 128"}))
+            .route("/hello", get(|| async { "Hello from axum!" }))
+            .nest("/auth", controllers::auth::router(&ctx))
             .layer(
                 TraceLayer::new_for_http()
-                    .make_span_with(trace::make_span_with)
-                    .on_request(trace::on_request)
-                    .on_response(trace::on_response)
-                    .on_failure(trace::on_failure),
+                    .make_span_with(middlewares::make_span_with)
+                    .on_request(middlewares::on_request)
+                    .on_response(middlewares::on_response)
+                    .on_failure(middlewares::on_failure),
             );
         
         let listener = TcpListener::bind(config.server().address()).await?;
