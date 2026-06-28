@@ -1,0 +1,398 @@
+/* ===========================
+   RESET
+=========================== */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+
+    font-family:
+        Inter,
+        Segoe UI,
+        sans-serif;
+
+    background:#09090b;
+
+    color:white;
+
+    min-height:100vh;
+
+    overflow-x:hidden;
+}
+
+/* ===========================
+   BACKGROUND
+=========================== */
+
+.background{
+
+    position:fixed;
+
+    inset:0;
+
+    z-index:-1;
+
+    background:
+        radial-gradient(circle at top left,#2563eb55,transparent 35%),
+        radial-gradient(circle at bottom right,#7c3aed55,transparent 35%),
+        #09090b;
+
+}
+
+/* ===========================
+   LAYOUT
+=========================== */
+
+.container{
+
+    width:min(1200px,90%);
+
+    margin:auto;
+
+    padding:60px 0;
+
+}
+
+/* ===========================
+   HERO
+=========================== */
+
+.hero{
+
+    text-align:center;
+
+    margin-bottom:40px;
+
+}
+
+.hero h1{
+
+    font-size:48px;
+
+    font-weight:700;
+
+    margin-bottom:12px;
+
+}
+
+.hero p{
+
+    color:#a1a1aa;
+
+    font-size:18px;
+
+}
+
+/* ===========================
+   CARD
+=========================== */
+
+.auth-card,
+.card{
+
+    background:rgba(255,255,255,.05);
+
+    backdrop-filter:blur(18px);
+
+    border:1px solid rgba(255,255,255,.08);
+
+    border-radius:18px;
+
+    padding:28px;
+
+    box-shadow:
+        0 10px 40px rgba(0,0,0,.35);
+
+}
+
+/* ===========================
+   TABS
+=========================== */
+
+.tabs{
+
+    display:flex;
+
+    gap:10px;
+
+    margin-bottom:30px;
+
+}
+
+.tab{
+
+    flex:1;
+
+    border:none;
+
+    background:#18181b;
+
+    color:white;
+
+    cursor:pointer;
+
+    padding:14px;
+
+    border-radius:12px;
+
+    transition:.25s;
+
+    font-size:16px;
+
+}
+
+.tab:hover{
+
+    background:#27272a;
+
+}
+
+.tab.active{
+
+    background:#2563eb;
+
+}
+
+/* ===========================
+   FORMS
+=========================== */
+
+form{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:22px;
+
+}
+
+.input-group{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:8px;
+
+}
+
+label{
+
+    color:#d4d4d8;
+
+    font-size:14px;
+
+}
+
+input{
+
+    padding:15px;
+
+    border-radius:12px;
+
+    border:1px solid #3f3f46;
+
+    background:#18181b;
+
+    color:white;
+
+    outline:none;
+
+    transition:.25s;
+
+    font-size:15px;
+
+}
+
+input:focus{
+
+    border-color:#3b82f6;
+
+    box-shadow:0 0 15px #2563eb55;
+
+}
+/* ===========================
+   BUTTONS
+=========================== */
+
+button{
+
+    cursor:pointer;
+
+    border:none;
+
+    transition:.25s;
+
+}
+
+.primary-btn{
+
+    background:#2563eb;
+
+    color:white;
+
+    padding:16px;
+
+    border-radius:12px;
+
+    font-size:16px;
+
+    font-weight:600;
+
+}
+
+.primary-btn:hover{
+
+    background:#1d4ed8;
+
+    transform:translateY(-2px);
+
+}
+
+.secondary-btn{
+
+    background:#27272a;
+
+    color:white;
+
+    padding:14px;
+
+    border-radius:12px;
+
+}
+
+.secondary-btn:hover{
+
+    background:#3f3f46;
+
+}
+/* ===========================
+   UTILITIES
+=========================== */
+
+.hidden{
+
+    display:none;
+
+}
+
+.dashboard{
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+
+    gap:24px;
+
+    margin-top:40px;
+
+}
+
+.card h2{
+
+    margin-bottom:20px;
+
+}
+
+textarea{
+
+    width:100%;
+
+    height:170px;
+
+    resize:none;
+
+    border:none;
+
+    border-radius:12px;
+
+    padding:15px;
+
+    background:#18181b;
+
+    color:#00ff95;
+
+    font-family:Consolas, monospace;
+
+    margin-bottom:15px;
+
+}
+
+.buttons{
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:15px;
+
+}
+
+.buttons button{
+
+    padding:15px;
+
+    border-radius:12px;
+
+    background:#2563eb;
+
+    color:white;
+
+}
+
+.buttons button:hover{
+
+    background:#1d4ed8;
+
+}
+
+pre{
+
+    overflow:auto;
+
+    white-space:pre-wrap;
+
+    word-break:break-word;
+
+    color:#22c55e;
+
+}
+
+#toast{
+
+    position:fixed;
+
+    bottom:30px;
+
+    right:30px;
+
+    background:#16a34a;
+
+    color:white;
+
+    padding:18px 24px;
+
+    border-radius:12px;
+
+    opacity:0;
+
+    pointer-events:none;
+
+    transition:.35s;
+
+}
+
+#toast.show{
+
+    opacity:1;
+
+}

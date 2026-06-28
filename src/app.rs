@@ -1,11 +1,17 @@
 use std::{io::IsTerminal, sync::Arc};
 
-use axum::{Router, routing::get};
+use axum::{routing::get, Router};
 use color_eyre::config::{HookBuilder, Theme};
 use tokio::net::TcpListener;
 use tower_http::trace::TraceLayer;
 
-use crate::{Result, config::Config, controllers, context::AppContext, middlewares::trace};
+use crate::{
+    config::Config,
+    context::AppContext,
+    controllers,
+    middlewares::trace,
+    Result,
+};
 
 pub struct App;
 
@@ -33,9 +39,11 @@ impl App {
                     .on_response(trace::on_response)
                     .on_failure(trace::on_failure),
             );
-        
+
         let listener = TcpListener::bind(config.server().address()).await?;
+
         tracing::info!("Listening on {}", config.server().url());
+
         axum::serve(listener, router).await.map_err(Into::into)
     }
 }

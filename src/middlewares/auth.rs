@@ -95,10 +95,12 @@ where
                 return Ok(AuthError::MissingCredentials.into_response());
             };
 
-            let _token_details = match ctx.auth.access.verify_token(&access_token) {
+            let token_details = match ctx.auth.access.verify_token(&access_token) {
                 Ok(details) => details,
                 Err(err) => return Ok(err.into_response()),
             };
+
+            parts.extensions.insert(token_details);
 
             let req = Request::from_parts(parts, body);
 

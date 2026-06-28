@@ -80,14 +80,12 @@ where
             let (mut parts, body) = req.into_parts();
 
             let refresh_token = match parts.extract::<TypedHeader<Cookie>>().await {
-                Ok(cookies) => cookies.get("refresh").map(ToString::to_string),
+                Ok(TypedHeader(cookies)) => cookies.get("refresh_token").map(ToString::to_string),
                 Err(_) => return Ok(AuthError::MissingCredentials.into_response()),
-
             };
 
             let Some(refresh_token) = refresh_token else {
                 return Ok(AuthError::MissingCredentials.into_response());
-
             };
 
             let access_token = match parts.extract::<TypedHeader<Authorization<Bearer>>>().await {
@@ -162,10 +160,7 @@ where
                 HeaderValue::from_str(format!("Bearer {}", &new_access_token).as_str()).unwrap(),
                 
             );
-            req.headers_mut().append(
-                SET_COOKIE,
-                HeaderValue::from_str(access_cookie.as_str()).unwrap(),
-            );
+            
 
             inner.call(req).await
         })

@@ -35,6 +35,11 @@ impl AppContext {
 
     pub async fn try_from(config: &Config) -> Result<Self, Report> {
         let db = config.database().pool().await;
+
+        sqlx::migrate!("./migrations")
+            .run(&db)
+            .await?;
+
         let redis = config.redis().multiplexed_connection().await?;
 
         let auth = AuthContext {
